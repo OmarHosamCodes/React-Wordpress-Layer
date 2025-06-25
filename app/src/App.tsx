@@ -55,7 +55,7 @@ export function App() {
 	return (
 		<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
 			<DialogTrigger className="fixed bottom-0 left-0 m-5">
-				<Button>Open Dialog</Button>
+				<Button>Click Here</Button>
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>

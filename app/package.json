@@ -9,7 +9,7 @@
 		"dev": "bun --hot src/index.tsx",
 		"start": "NODE_ENV=production bun src/index.tsx",
 		"build": "bun run build.ts",
-		"build:wp": "bun run build-for-wp.ts && bun run wordpress-prepare.ts"
+		"build:wp": "bun run build-for-wp.ts"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.0.1",
