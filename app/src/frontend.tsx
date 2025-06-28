@@ -11,13 +11,17 @@ import { FeedbackApp } from "./FeedbackApp";
 import "./index.css";
 import "./logo.svg";
 
-const elem = document.getElementById("learning-element");
+const elem = document.getElementById("rwl-element");
 const elem2 = document.getElementById("feedback-element");
 if (!elem && !elem2) {
-	console.error("Element with id 'learning-element' not found");
-	throw new Error("Element with id 'learning-element' not found");
+	console.error("Element with id 'rwl-element' or 'feedback-element' not found");
+	throw new Error("Element with id 'rwl-element' or 'feedback-element' not found");
 }
 
-// The hot module reloading API is not available in production.
-createRoot(elem).render(<App />);
-createRoot(elem2).render(<FeedbackApp />);
+if (elem) {
+	createRoot(elem).render(<App />);
+}
+
+if (elem2) {
+	createRoot(elem2).render(<FeedbackApp />);
+}

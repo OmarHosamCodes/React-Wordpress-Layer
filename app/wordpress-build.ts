@@ -46,12 +46,11 @@ async function main() {
 	}
 
 	console.log(
-		"\n👉 To use in WordPress, make sure your learning.php file is properly enqueuing these files.\n",
+		"\n👉 To use in WordPress, make sure your rwl.php file is properly enqueuing these files.\n",
 	);
 }
 
-// Run the main function
-main().catch((error) => {
-	console.error("Build failed:", error);
+main().catch((e) => {
+	console.error(e);
 	process.exit(1);
 });
