@@ -9,7 +9,8 @@
 		"dev": "bun --hot src/index.tsx",
 		"start": "NODE_ENV=production bun src/index.tsx",
 		"build": "bun run build.ts",
-		"build:wp": "bun run build-for-wp.ts"
+		"build:wp": "bun run build-for-wp.ts",
+		"watch:wp": "bun --watch build-for-wp.ts"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.0.1",
@@ -30,8 +31,9 @@
 		"zod": "^3.24.4"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "2.0.6",
+		"@types/bun": "latest",
 		"@types/react": "^19",
-		"@types/react-dom": "^19",
-		"@types/bun": "latest"
+		"@types/react-dom": "^19"
 	}
 }

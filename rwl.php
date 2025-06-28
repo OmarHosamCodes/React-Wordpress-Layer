@@ -293,5 +293,179 @@ function rwl_localize_product_data()
     ];
 
     wp_localize_script('rwl-react-frontend.js', 'rwlProductData', $page_data);
+
+    // Add WooCommerce add to cart parameters for AJAX
+    if (is_product()) {
+        wp_localize_script('rwl-react-frontend.js', 'rwl_ajax_params', [
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'wc_ajax_url' => WC_AJAX::get_endpoint('%%endpoint%%'),
+            'add_to_cart_nonce' => wp_create_nonce('add_to_cart'),
+        ]);
+    }
 }
 add_action('wp_enqueue_scripts', 'rwl_localize_product_data');
+
+/**
+ * Handle AJAX add to cart with custom options
+ */
+function rwl_ajax_add_to_cart()
+{
+    // Check nonce for security
+    if (!wp_verify_nonce($_POST['nonce'], 'add_to_cart')) {
+        wp_die('Security check failed');
+    }
+
+    $product_id = intval($_POST['product_id']);
+    $quantity = intval($_POST['quantity']);
+    $size = sanitize_text_field($_POST['size']);
+    $fragrance = sanitize_text_field($_POST['fragrance']);
+
+    // Validate inputs
+    if ($product_id <= 0 || $quantity <= 0) {
+        wp_send_json_error('Invalid product or quantity');
+        return;
+    }
+
+    // Get the product
+    $product = wc_get_product($product_id);
+    if (!$product) {
+        wp_send_json_error('Product not found');
+        return;
+    }
+
+    // Check if product is purchasable
+    if (!$product->is_purchasable()) {
+        wp_send_json_error('Product is not purchasable');
+        return;
+    }
+
+    // Check stock
+    if (!$product->has_enough_stock($quantity)) {
+        wp_send_json_error('Not enough stock available');
+        return;
+    }
+
+    // Prepare cart item data with custom options
+    $cart_item_data = [
+        'rwl_custom_size' => $size,
+        'rwl_custom_fragrance' => $fragrance,
+        'rwl_custom_options' => [
+            'size' => $size,
+            'fragrance' => $fragrance
+        ]
+    ];
+
+    // Add to cart
+    $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity, 0, [], $cart_item_data);
+
+    if ($cart_item_key) {
+        // Success response
+        wp_send_json_success([
+            'message' => 'Product added to cart successfully',
+            'cart_item_key' => $cart_item_key,
+            'cart_count' => WC()->cart->get_cart_contents_count(),
+            'cart_total' => WC()->cart->get_cart_total(),
+            'fragments' => apply_filters('woocommerce_add_to_cart_fragments', [])
+        ]);
+    } else {
+        wp_send_json_error('Failed to add product to cart');
+    }
+}
+add_action('wp_ajax_rwl_add_to_cart', 'rwl_ajax_add_to_cart');
+add_action('wp_ajax_nopriv_rwl_add_to_cart', 'rwl_ajax_add_to_cart');
+
+/**
+ * Display custom options in cart and checkout
+ */
+function rwl_display_custom_options_in_cart($item_data, $cart_item)
+{
+    if (isset($cart_item['rwl_custom_options'])) {
+        $options = $cart_item['rwl_custom_options'];
+
+        if (!empty($options['size'])) {
+            $item_data[] = [
+                'key' => __('Size', 'rwl-plugin'),
+                'value' => $options['size'],
+                'display' => $options['size'],
+            ];
+        }
+
+        if (!empty($options['fragrance'])) {
+            $item_data[] = [
+                'key' => __('Fragrance', 'rwl-plugin'),
+                'value' => $options['fragrance'],
+                'display' => $options['fragrance'],
+            ];
+        }
+    }
+
+    return $item_data;
+}
+add_filter('woocommerce_get_item_data', 'rwl_display_custom_options_in_cart', 10, 2);
+
+/**
+ * Save custom options to order items
+ */
+function rwl_save_custom_options_to_order_items($item, $cart_item_key, $values, $order)
+{
+    if (isset($values['rwl_custom_options'])) {
+        $options = $values['rwl_custom_options'];
+
+        if (!empty($options['size'])) {
+            $item->add_meta_data(__('Size', 'rwl-plugin'), $options['size']);
+        }
+
+        if (!empty($options['fragrance'])) {
+            $item->add_meta_data(__('Fragrance', 'rwl-plugin'), $options['fragrance']);
+        }
+    }
+}
+add_action('woocommerce_checkout_create_order_line_item', 'rwl_save_custom_options_to_order_items', 10, 4);
+
+/**
+ * Handle AJAX wishlist functionality
+ */
+function rwl_ajax_toggle_wishlist()
+{
+    // Check nonce for security
+    if (!wp_verify_nonce($_POST['nonce'], 'wishlist_toggle')) {
+        wp_die('Security check failed');
+    }
+
+    $product_id = intval($_POST['product_id']);
+    $user_id = get_current_user_id();
+
+    if ($user_id === 0) {
+        wp_send_json_error('User must be logged in');
+        return;
+    }
+
+    // Get current wishlist
+    $wishlist = get_user_meta($user_id, 'rwl_wishlist', true);
+    if (!is_array($wishlist)) {
+        $wishlist = [];
+    }
+
+    $is_in_wishlist = in_array($product_id, $wishlist);
+
+    if ($is_in_wishlist) {
+        // Remove from wishlist
+        $wishlist = array_diff($wishlist, [$product_id]);
+        $action = 'removed';
+    } else {
+        // Add to wishlist
+        $wishlist[] = $product_id;
+        $action = 'added';
+    }
+
+    // Update wishlist
+    update_user_meta($user_id, 'rwl_wishlist', $wishlist);
+
+    wp_send_json_success([
+        'action' => $action,
+        'is_in_wishlist' => !$is_in_wishlist,
+        'wishlist_count' => count($wishlist)
+    ]);
+}
+add_action('wp_ajax_rwl_toggle_wishlist', 'rwl_ajax_toggle_wishlist');
+add_action('wp_ajax_nopriv_rwl_toggle_wishlist', 'rwl_ajax_toggle_wishlist');
