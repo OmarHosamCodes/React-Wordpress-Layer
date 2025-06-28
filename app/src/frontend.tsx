@@ -7,15 +7,22 @@
 
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import { ProductPageApp } from "./components/ProductPageApp";
 import { FeedbackApp } from "./FeedbackApp";
 import "./index.css";
 import "./logo.svg";
 
 const elem = document.getElementById("rwl-element");
 const elem2 = document.getElementById("feedback-element");
-if (!elem && !elem2) {
-	console.error("Element with id 'rwl-element' or 'feedback-element' not found");
-	throw new Error("Element with id 'rwl-element' or 'feedback-element' not found");
+const productElem = document.getElementById("product-element");
+
+if (!elem && !elem2 && !productElem) {
+	console.error(
+		"Element with id 'rwl-element', 'feedback-element', or 'product-element' not found",
+	);
+	throw new Error(
+		"Element with id 'rwl-element', 'feedback-element', or 'product-element' not found",
+	);
 }
 
 if (elem) {
@@ -24,4 +31,8 @@ if (elem) {
 
 if (elem2) {
 	createRoot(elem2).render(<FeedbackApp />);
+}
+
+if (productElem) {
+	createRoot(productElem).render(<ProductPageApp />);
 }
